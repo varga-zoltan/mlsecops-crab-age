@@ -15,6 +15,7 @@ import yaml
 
 from crab_age.data.load import load_raw
 from crab_age.data.validate import invalid_row_masks, validate_schema
+from crab_age.logging_setup import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ def run(params: PrepareParams) -> dict[str, int]:
     params.report_path.parent.mkdir(parents=True, exist_ok=True)
     params.report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
-    logger.info("prepare finished: %s", report)
+    logger.info("prepare finished", extra={"report": report})
     return report
 
 
@@ -93,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate, clean and split the crab age data.")
     parser.add_argument("--params", type=Path, default=Path("params.yaml"))
     args = parser.parse_args(argv)
-    logging.basicConfig(level=logging.INFO)
+    setup_logging()
     run(read_params(args.params))
     return 0
 
