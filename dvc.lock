@@ -9,8 +9,8 @@ stages:
       size: 255288
     - path: src/crab_age/data
       hash: md5
-      md5: 7cdd76046e7fa4a87dc6a8dfdda525a5.dir
-      size: 6765
+      md5: a063bd35b5755ded94b13f6c61a18829.dir
+      size: 6804
       nfiles: 5
     params:
       params.yaml:
