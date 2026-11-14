@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crab-age"
+version = "0.1.0"
+description = "Crab age regression with an automated MLOps pipeline"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "Zoltan Varga" }]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.coverage.run]
+source = ["src", "tests"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 95

@@ -1,0 +1,5 @@
+[core]
+    analytics = false
+    remote = github
+['remote "github"']
+    url = https://raw.githubusercontent.com/varga-zoltan/mlsecops-crab-age-data/main
