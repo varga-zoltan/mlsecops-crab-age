@@ -88,13 +88,11 @@ def split_xy(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     return df.loc[:, FEATURES], pd.Series(df[TARGET], dtype=float, name=TARGET)
 
 
-def champion_mae(client: MlflowClient, model_name: str, X_test: pd.DataFrame, y_test: pd.Series) -> float | None:
-    """Evaluate the current champion on the test set; None if there is no champion.
+def champion_version(client: MlflowClient, model_name: str) -> str | None:
+    """Return the registry version that has the champion alias, or None.
 
-    The champion is re-evaluated on the *current* test set, so the comparison is
-    fair even if the data changed since the champion was trained. Any MLflow
-    error other than "model does not exist" is raised: an unreachable server
-    must never look like "no champion".
+    Any MLflow error other than "model does not exist" is raised: an
+    unreachable server must never look like "no champion".
     """
     try:
         registered = client.get_registered_model(model_name)
@@ -102,9 +100,20 @@ def champion_mae(client: MlflowClient, model_name: str, X_test: pd.DataFrame, y_
         if exc.error_code == ErrorCode.Name(RESOURCE_DOES_NOT_EXIST):
             return None
         raise
-    if CHAMPION_ALIAS not in registered.aliases:
+    version = registered.aliases.get(CHAMPION_ALIAS)
+    return None if version is None else str(version)
+
+
+def champion_mae(client: MlflowClient, model_name: str, X_test: pd.DataFrame, y_test: pd.Series) -> float | None:
+    """Evaluate the current champion on the test set; None if there is no champion.
+
+    The champion is re-evaluated on the *current* test set, so the comparison is
+    fair even if the data changed since the champion was trained.
+    """
+    version = champion_version(client, model_name)
+    if version is None:
         return None
-    champion = mlflow.pyfunc.load_model(f"models:/{model_name}@{CHAMPION_ALIAS}")
+    champion = mlflow.pyfunc.load_model(f"models:/{model_name}/{version}")
     return regression_metrics(y_test, champion.predict(X_test))["mae"]
 
 
