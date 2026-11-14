@@ -1,5 +1,5 @@
 # Crab Age application image, two targets:
-#   runtime - the FastAPI service (and later the dashboard); no DVC inside
+#   runtime - the FastAPI service and the Streamlit dashboard; no DVC inside
 #   init    - runtime + DVC, for the one-shot job: dvc pull + first training
 #
 # Build: docker build --target runtime -t crab-age-api:local .
@@ -7,11 +7,13 @@
 
 FROM python:3.12.16-slim AS runtime
 
+# DO_NOT_TRACK switches off Evidently's usage telemetry.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    MLFLOW_DISABLE_AGENT_HINT=1
+    MLFLOW_DISABLE_AGENT_HINT=1 \
+    DO_NOT_TRACK=1
 
 WORKDIR /app
 
@@ -22,6 +24,7 @@ RUN pip install -r requirements.txt
 # Then the code (changes often) and the files the jobs read at runtime.
 COPY pyproject.toml params.yaml dvc.yaml dvc.lock ./
 COPY src/ ./src/
+COPY dashboard/ ./dashboard/
 RUN pip install --no-deps . \
  && rm -rf build \
  && useradd --create-home --uid 10001 app \

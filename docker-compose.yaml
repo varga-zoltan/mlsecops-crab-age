@@ -4,8 +4,10 @@
 #   mlflow    tracking server + model registry; artifacts on a volume (--serve-artifacts)
 #   init      one-shot: dvc pull from the public GitHub remote, first training if no champion
 #   api       FastAPI: /token /health /version /train /predict
+#   dashboard Streamlit + Evidently data drift report (training data vs. logged requests)
 #
 # URLs from the host:  API http://localhost:8000/docs   MLflow http://localhost:5500
+#                      Dashboard http://localhost:8501
 # Containers reach each other by service name (postgres:5432, mlflow:5000), never 127.0.0.1.
 #
 # Every variable has a working LOCAL DEVELOPMENT default, so no .env or secrets file
@@ -108,6 +110,41 @@ services:
       postgres:
         condition: service_healthy
       mlflow:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      <<: *app-build
+      target: runtime
+    image: crab-age-api:local
+    command:
+      - streamlit
+      - run
+      - dashboard/app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+      - --browser.gatherUsageStats=false
+      - --client.toolbarMode=viewer
+    environment:
+      CRAB_MONITORING_DB_URL: postgresql+psycopg://${POSTGRES_USER:-crab}:${POSTGRES_PASSWORD:-crab-dev-postgres-password}@postgres:5432/monitoring
+      CRAB_DRIFT_MIN_ROWS: ${CRAB_DRIFT_MIN_ROWS:-30}
+      CRAB_DRIFT_WINDOW: ${CRAB_DRIFT_WINDOW:-500}
+    volumes:
+      - crab-data:/app/data/processed:ro
+    ports:
+      - "8501:8501"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6
+    depends_on:
+      postgres:
         condition: service_healthy
       init:
         condition: service_completed_successfully

@@ -20,6 +20,7 @@ with DVC and trains the first model, so it takes a few minutes. The API starts w
 |---|---|---|
 | API (Swagger UI) | http://localhost:8000/docs | `/token`, `/health`, `/version`, `/train`, `/predict` |
 | MLflow | http://localhost:5500 | experiments, model registry (`crab-age@champion`) |
+| Monitoring dashboard | http://localhost:8501 | Streamlit + Evidently data drift report |
 
 Postgres is only reachable from the containers, not from the host.
 
@@ -58,6 +59,27 @@ Outputs in `data/processed/` (tracked by DVC): `crab_age_clean.csv`, `train.csv`
 
 Scaling and encoding are not done here. They are part of the sklearn `Pipeline`,
 so training and serving use the same transformations.
+
+## Monitoring and drift report
+
+Every `/predict` request and its prediction is logged in the Postgres database `monitoring`.
+The dashboard (http://localhost:8501) compares the latest N logged requests (slider, default 500)
+with the training data using Evidently's `DataDriftPreset`. Dataset drift is reported when at least
+half of the feature columns drift (Evidently's default rule).
+
+Right after the first start the log is empty, so the dashboard asks for data. Generate traffic
+inside the running stack (no local Python needed):
+
+```bash
+docker compose exec api python -m crab_age.monitoring.simulate_traffic --mode normal --n 500
+docker compose exec api python -m crab_age.monitoring.simulate_traffic --mode drift --n 500
+```
+
+`normal` sends real crabs from the held-out test set (expected: no dataset drift),
+`drift` sends the same crabs bigger and heavier, with more juveniles (expected: dataset drift).
+With the project venv active, the same works from the host: `python scripts/simulate_traffic.py --mode drift`.
+
+Evidently and Streamlit usage telemetry is switched off (`DO_NOT_TRACK=1`, `--browser.gatherUsageStats=false`).
 
 ## Technical decisions
 
