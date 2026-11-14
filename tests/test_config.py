@@ -5,7 +5,7 @@ from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 from pydantic import ValidationError
 
-from crab_age.config import Settings, get_settings
+from crab_age.config import DashboardSettings, Settings, get_settings
 
 SECRET = "x" * 64
 
@@ -68,3 +68,21 @@ def test_other_env_vars_are_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("POSTGRES_PASSWORD", "x")
     monkeypatch.setenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
     assert Settings(api_password_hash=hash_password("pw"), jwt_secret_key=SECRET).api_username == "crab"
+
+
+def test_dashboard_settings_need_no_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CRAB_DRIFT_MIN_ROWS", "50")
+    settings = DashboardSettings()
+    assert settings.drift_min_rows == 50
+    assert settings.drift_window == 500
+
+
+def test_dashboard_variables_do_not_break_api_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CRAB_DRIFT_WINDOW", "100")
+    assert Settings(api_password_hash=hash_password("pw"), jwt_secret_key=SECRET).api_username == "crab"
+
+
+def test_dashboard_settings_reject_unknown_variable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CRAB_DRIFT_WINDOWS", "100")
+    with pytest.raises(ValidationError, match="CRAB_DRIFT_WINDOWS"):
+        DashboardSettings()

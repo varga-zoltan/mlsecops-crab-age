@@ -1,4 +1,4 @@
-"""Runtime configuration of the API, read from environment variables.
+"""Runtime configuration of the API and the dashboard, read from environment variables.
 
 Every variable has the ``CRAB_`` prefix (e.g. ``CRAB_JWT_SECRET_KEY``).
 Settings come only from real environment variables (in Docker: the compose
@@ -19,6 +19,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 ENV_PREFIX: Final = "CRAB_"
+
+
+def _reject_unknown_env_vars() -> None:
+    """Raise if a CRAB_* environment variable matches no setting of the API or the dashboard."""
+    fields = set(Settings.model_fields) | set(DashboardSettings.model_fields)
+    known = {ENV_PREFIX + name.upper() for name in fields}
+    unknown = sorted(key for key in os.environ if key.upper().startswith(ENV_PREFIX) and key.upper() not in known)
+    if unknown:
+        raise ValueError(f"unknown environment variables (typo?): {', '.join(unknown)}")
 
 
 class Settings(BaseSettings):
@@ -49,10 +58,7 @@ class Settings(BaseSettings):
     @model_validator(mode="before")
     @classmethod
     def _no_unknown_env_vars(cls, data: Any) -> Any:
-        known = {ENV_PREFIX + name.upper() for name in cls.model_fields}
-        unknown = sorted(key for key in os.environ if key.upper().startswith(ENV_PREFIX) and key.upper() not in known)
-        if unknown:
-            raise ValueError(f"unknown environment variables (typo?): {', '.join(unknown)}")
+        _reject_unknown_env_vars()
         return data
 
     @field_validator("api_password_hash")
@@ -69,6 +75,23 @@ class Settings(BaseSettings):
         if len(value.get_secret_value().encode()) < 64:
             raise ValueError("CRAB_JWT_SECRET_KEY must be at least 64 bytes long")
         return value
+
+
+class DashboardSettings(BaseSettings):
+    """Settings of the Streamlit monitoring dashboard (no secrets needed)."""
+
+    model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, extra="forbid", frozen=True)
+
+    monitoring_db_url: SecretStr = SecretStr("sqlite:///monitoring.db")
+    reference_path: Path = Path("data/processed/train.csv")
+    drift_min_rows: int = Field(default=30, ge=5, le=10_000)
+    drift_window: int = Field(default=500, ge=10, le=100_000)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _no_unknown_env_vars(cls, data: Any) -> Any:
+        _reject_unknown_env_vars()
+        return data
 
 
 @lru_cache
