@@ -1,0 +1,13 @@
+stages:
+  prepare:
+    cmd: python -m crab_age.data.prepare --params params.yaml
+    deps:
+      - data/raw/CrabAgePrediction.csv
+      - src/crab_age/data
+    params:
+      - prepare
+    outs:
+      - data/processed
+    metrics:
+      - metrics/prepare.json:
+          cache: false

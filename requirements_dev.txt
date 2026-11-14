@@ -1,4 +1,6 @@
 # Development and test tools (exact versions)
+-r requirements.txt
+
 coverage==7.17.3
 dvc==3.67.1
 flake8==7.5.0

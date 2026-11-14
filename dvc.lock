@@ -1,0 +1,33 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python -m crab_age.data.prepare --params params.yaml
+    deps:
+    - path: data/raw/CrabAgePrediction.csv
+      hash: md5
+      md5: b8ba02559a2116d96b450be84c5b3d34
+      size: 255288
+    - path: src/crab_age/data
+      hash: md5
+      md5: 7cdd76046e7fa4a87dc6a8dfdda525a5.dir
+      size: 6765
+      nfiles: 5
+    params:
+      params.yaml:
+        prepare:
+          raw_path: data/raw/CrabAgePrediction.csv
+          out_dir: data/processed
+          report_path: metrics/prepare.json
+          max_height_to_diameter: 0.8
+          test_size: 0.2
+          random_state: 42
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 0b2237c3aba39419b4b9c690f3c30dac.dir
+      size: 502253
+      nfiles: 3
+    - path: metrics/prepare.json
+      hash: md5
+      md5: a5db91ed2fdb5291a395717f87670e86
+      size: 214
