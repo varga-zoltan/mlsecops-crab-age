@@ -58,3 +58,13 @@ def test_init_schema_is_idempotent(store: PredictionStore) -> None:
     store.insert(_record(0))
     store.init_schema()
     assert len(store.read_all()) == 1
+
+
+def test_read_latest_returns_newest_oldest_first(store: PredictionStore) -> None:
+    for i in range(5):
+        store.insert(_record(i))
+    latest = store.read_latest(2)
+    assert list(latest["request_id"]) == ["req-3", "req-4"]
+    assert list(latest.index) == [0, 1]
+    assert store.count_all() == 5
+    assert len(store.read_latest(100)) == 5

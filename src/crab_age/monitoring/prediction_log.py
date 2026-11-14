@@ -89,6 +89,16 @@ class PredictionStore:
         with self.engine.begin() as conn:
             conn.execute(statement)
 
+    def count_all(self) -> int:
+        """Number of logged predictions."""
+        with self.engine.connect() as conn:
+            return int(conn.execute(select(func.count()).select_from(predictions)).scalar_one())
+
+    def read_latest(self, n: int) -> pd.DataFrame:
+        """The newest ``n`` predictions, oldest first (the drift report's current data)."""
+        newest = select(*[predictions.c[name] for name in LOG_COLUMNS]).order_by(predictions.c.id.desc()).limit(n)
+        return self._frame(newest).iloc[::-1].reset_index(drop=True)
+
     def read_all(self) -> pd.DataFrame:
         """The whole prediction log, oldest first (input of the drift report)."""
         query = select(*[predictions.c[name] for name in LOG_COLUMNS]).order_by(predictions.c.id)
