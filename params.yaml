@@ -9,6 +9,13 @@ prepare:
 
 train:
   train_path: data/processed/train.csv
+  test_path: data/processed/test.csv
+  experiment_name: crab-age
+  registered_model_name: crab-age
+  gate:
+    # Acceptance gate: the challenger must not be worse than the champion
+    # and its test MAE (months) must stay below this absolute limit.
+    max_mae: 2.0
   search:
     # Every model type gets its own randomized search; the best CV MAE wins.
     cv_folds: 5
