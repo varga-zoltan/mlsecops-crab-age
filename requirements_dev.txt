@@ -4,6 +4,8 @@
 coverage==7.17.3
 dvc==3.67.1
 flake8==7.5.0
+httpx==0.28.1
+hypothesis==6.168.5
 # Same version as in requirements.txt and the MLflow server image (client == server).
 mlflow==3.18.0
 pre-commit==4.7.0
