@@ -18,15 +18,14 @@
 | Inference batches | Built from unexported DB rows, exported to MLflow (`crab-age-inference`) when >= 10 rows wait | Nothing is lost on restart; batch size in `CRAB_INFERENCE_BATCH_SIZE` |
 | `/train` | Synchronous, one run at a time (409 otherwise); a failed reload keeps the old champion serving | Simple and testable; serving never breaks |
 | API user | One user from env: `CRAB_API_USERNAME` + Argon2 hash in `CRAB_API_PASSWORD_HASH`; `CRAB_JWT_SECRET_KEY` >= 64 bytes (HS512) | No password in code |
+| MLflow artifacts | Docker volume served by the MLflow server (`--serve-artifacts`), no MinIO | Official MinIO image is no longer published; the third-party rebuild is unmaintained (supply chain risk) |
+| Host ports | API 8000, MLflow 5500, Streamlit 8501; Postgres not published | Port 5000 is used by AirPlay on macOS; smaller attack surface |
+| Images | One `Dockerfile`, targets `runtime` (API, no DVC) and `init` (+ DVC); MLflow server: `ghcr.io/mlflow/mlflow:v3.18.0` + psycopg, non-root | Smaller API image; CI builds both targets |
 | Settings source | Environment variables only (no `.env` reading in Python); unknown `CRAB_*` variables are an error | Compose's `.env` may hold non-CRAB variables; typos must not fall back silently |
 
 ## Open items to remember
 
-- **Docker:** the MLflow server image must be the same version as the client:
-  `ghcr.io/mlflow/mlflow:v3.18.0` (check the arm64 variant).
-- **Docker:** Postgres needs a second database `monitoring` (init script), the API gets
-  `CRAB_MONITORING_DB_URL=postgresql+psycopg://...@postgres:5432/monitoring`.
-- **Docker:** the Argon2 hash contains `$` characters: write them as `$$` in `docker-compose.yaml`.
-- **Docker:** API start command: `uvicorn crab_age.api.main:create_app --factory --host 0.0.0.0 --port 8000`.
-- **README:** document the dev login (user `crab`, dev password) and that it must be overridden via env outside local dev.
+- **Lineage in Docker:** without `.git` in the image the `git_sha` tag is `unknown` unless the image is
+  built with `GIT_SHA=$(git rev-parse HEAD) docker compose up --build`.
+- **Image size:** the app image is ~1.5 GB (full `mlflow` package); `mlflow-skinny` could shrink it.
 - **Tests:** Starlette warns that `httpx` with its TestClient is deprecated (`httpx2` recommended); revisit when FastAPI follows.

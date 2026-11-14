@@ -1,0 +1,49 @@
+# Keep the build context small and free of secrets: copy in only what the image needs.
+
+# Git, CI, editors
+.git/
+.github/
+.gitignore
+.pre-commit-config.yaml
+.vscode/
+.idea/
+.DS_Store
+
+# Secrets and local settings (only *.example files are safe)
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# DVC: local remote config, cache and data are never baked in; the init job pulls the data
+.dvc/config.local
+.dvc/cache/
+.dvc/tmp/
+data/**
+!data/raw/*.dvc
+metrics/
+
+# Python, tests, local runs
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+tests/
+mlruns/
+mlartifacts/
+*.db
+
+# Documentation and notebooks
+docs/
+*.md
+notebooks/
+*.ipynb

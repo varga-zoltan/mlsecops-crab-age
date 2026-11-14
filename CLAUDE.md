@@ -8,7 +8,7 @@ Ez a fájl a Claude Code állandó utasításkészlete ehhez a repóhoz. Minden 
 - **Magyarul kommunikálj.** A kód, a kommentek, a commit üzenetek és a README angolul íródnak (a tanár repói is angolok). Kivétel a README „AI használat” szakasza: az lehet magyarul is.
 - **Lépésről lépésre haladj.** Egyszerre egy kis, ellenőrizhető feladatot csinálj. Minden lépés előtt 1–3 mondatban mondd el, **mit** csinálsz és **miért**, és kösd a tananyag fogalmaihoz (pl. „ez az elfogadási kapu, a jóság csökkenését akadályozza meg”).
 - **Git-parancsot soha ne futtass magad** olyat, ami módosítja a repót (`git add`, `commit`, `push`, `merge`, `checkout -b`, `rebase`, `reset`). Írd ki a pontos parancsot egy kódblokkba, magyarázd el, mit csinál, és **Zoltán írja be**. Olvasó parancsot (`git status`, `git log`, `git diff`) futtathatsz.
-- Ha valamit **grafikus felületen** kell csinálni (GitHub weboldal, Docker Desktop, böngésző, MLflow UI, MinIO konzol), számozott lépésekben írd le: hova kattintson, mit kell látnia.
+- Ha valamit **grafikus felületen** kell csinálni (GitHub weboldal, Docker Desktop, böngésző, MLflow UI), számozott lépésekben írd le: hova kattintson, mit kell látnia.
 - Minden kódváltozás után futtasd: `flake8`, `pyright`, `pytest` + coverage. Csak zöld állapotban javasolj commitot.
 - A munkamenet végén foglald össze: mi készült el, mi a következő lépés, mi maradt nyitva.
 - Ha egy döntés több irányba is mehet (pl. melyik modell, mit logoljunk hova), **kérdezz**, ne találgass.
@@ -50,7 +50,7 @@ A tanár a repót leklónozza, és **csak ennyit ír be:** `docker compose up`. 
   - Az adat **DVC-ben van** (a feladat kötelezően előírja). A gitben csak a `.dvc` pointer és a `dvc.lock` van.
   - A **DVC remote egy publikus, csak olvasható tároló a GitHubon**: egy külön repó (`mlsecops-crab-age-data`), amit a DVC `http` remote-ként olvas (`https://raw.githubusercontent.com/varga-zoltan/mlsecops-crab-age-data/main`), így a tanár gépén is jelszó nélkül működik a `dvc pull`. Feltöltés: a repó helyi klónja local remote-ként (`dvc push -r upload`), utána git push abban a repóban. A dataset CC0 licencű, 250 KB, ezért publikussá tehető.
   - **Ezt az első napon, a DVC beállításakor kell kipróbálni:** friss mappában `dvc pull` jelszó nélkül. Ha nem működik, ne kerülgesd, hanem mutass alternatívát (pl. DagsHub DVC remote), és döntsünk együtt.
-  - A MinIO-t a DVC-hez nem használjuk. Az MLflow artifact store-nak maradhat (a tanár mintája szerint).
+  - MinIO-t nem használunk (sem a DVC-hez, sem az MLflow-hoz): a hivatalos image már nem elérhető, a harmadik féltől származó, nem karbantartott image ellátási lánc kockázat. Az MLflow artifactok egy Docker volume-ra kerülnek.
   - Egy egyszeri **init konténer** a `docker compose up` alatt: `dvc pull` → ha még nincs `champion` modell, első tanítás (a `dvc repro` / train pipeline-nal) → kilép. Az `api` és a `dashboard` csak ennek sikeres befejezése után indul (`service_completed_successfully`). Így a `/predict` és a dashboard azonnal működik.
 - **Indulási sorrend:** healthcheckek + `depends_on: condition: service_healthy / service_completed_successfully`. Semmi nem induljon, amíg a függősége nem kész.
 - Az image-ek a compose-ból épüljenek (`build:`), ne kelljen előtte `docker build`.
@@ -61,16 +61,15 @@ A tanár a repót leklónozza, és **csak ennyit ír be:** `docker compose up`. 
 
 | Service | Szerep |
 |---|---|
-| `postgres` | MLflow backend store (+ opcionálisan a predikciós log tábla) |
-| `minio` + `create-buckets` | S3-kompatibilis tároló az MLflow artifactokhoz |
+| `postgres` | MLflow backend store + külön `monitoring` adatbázis a predikciós log táblának |
 | `init` | egyszeri: `dvc pull` a GitHub-os DVC remote-ról + első tanítás, ha nincs `champion` |
-| `mlflow` | tracking server + model registry (`--serve-artifacts`) |
+| `mlflow` | tracking server + model registry (`--serve-artifacts`, az artifactok egy Docker volume-on) |
 | `api` | FastAPI: `/token`, `/health`, `/version`, **`/train`**, **`/predict`** |
 | `dashboard` | Streamlit, benne az **Evidently** drift report (reference = training adat, current = logolt kérések) |
 | `airflow` (opcionális, +5%, a végén) | ütemezett újratanítás és/vagy drift-ellenőrzés DAG |
 
 Mintának a `github-fastapi/docker-compose.yaml`-t vedd (x-env anchor, healthcheck, `depends_on: condition: service_healthy`, docker secrets).
-A konténerek egymást **service névvel** érik el (`http://minio:9000`, `http://mlflow:5000`), soha nem `127.0.0.1`-gyel.
+A konténerek egymást **service névvel** érik el (`http://mlflow:5000`, `postgres:5432`), soha nem `127.0.0.1`-gyel.
 A gép **Apple Silicon (M3, arm64)**: ellenőrizd, hogy minden image-nek van-e arm64 változata.
 
 ### API követelmények
@@ -168,7 +167,7 @@ mlsecops-crab-age/
 - **A README stílusa:** úgy írd, mintha Zoltán írta volna. Tömör, lényegre törő, professzionális, de egyszerű nyelvezetű. Rövid mondatok, nincs marketingszöveg, nincs túlzó jelző, nincs felesleges emoji, nincsenek hosszú bevezetők. Inkább rövid listák, táblázatok és működő parancsok. Ha valami nem működik vagy technikai adósság, azt egyenesen írd le.
 - Az „AI használat” szakasz ettől függetlenül **őszintén** leírja, mire és hogyan használtuk az MI-t.
 
-- A `README.md` (markdown) tartalmazza: áttekintés + architektúra ábra (mermaid), telepítés, `docker compose up`, a végpontok használata (curl példák), az MLflow/MinIO/Streamlit/Airflow URL-jei, a tesztek és minőségi eszközök futtatása, az adat előfeldolgozás leírása, és egy **„AI használat”** szakasz (mire és hogyan használtuk a Claude-ot / Claude Code-ot).
+- A `README.md` (markdown) tartalmazza: áttekintés + architektúra ábra (mermaid), telepítés, `docker compose up`, a végpontok használata (curl példák), az MLflow/Streamlit/Airflow URL-jei, a tesztek és minőségi eszközök futtatása, az adat előfeldolgozás leírása, és egy **„AI használat”** szakasz (mire és hogyan használtuk a Claude-ot / Claude Code-ot).
 - **Screenshotok** a `docs/screenshots/` mappába (gitbe commitolva, beszédes fájlnévvel, pl. `01_mlflow_experiments.png`). A README hivatkozza és be is ágyazza őket. Ha eljutunk ide, adj Zoltánnak lépésenkénti útmutatót, mit nyisson meg és mit fotózzon. Ellenőrzőlista:
   - [ ] **MLflow dashboard**: az experiment a runokkal és metrikákkal (látszik az automatikus javulás), plusz a model registry a `champion` aliasszal
   - [ ] **REST API működése és tesztje**: Swagger UI (`/docs`) sikeres `/token` → `/train` → `/predict` hívással és válasszal, valamint a hibás inputra adott 422-es és az auth nélküli 401-es válasz
