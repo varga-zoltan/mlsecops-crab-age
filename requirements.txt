@@ -1,6 +1,15 @@
 # Runtime dependencies (exact versions)
+fastapi==0.143.1
 mlflow==3.18.0
 numpy==2.2.6
 pandas==2.3.3
+psycopg[binary]==3.3.9
+pwdlib[argon2]==0.3.1
+pydantic==2.14.3
+pydantic-settings==2.15.0
+pyjwt==2.15.1
+python-multipart==0.0.33
 pyyaml==6.0.3
 scikit-learn==1.7.2
+sqlalchemy==2.1.8
+uvicorn==0.54.0
