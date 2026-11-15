@@ -22,7 +22,8 @@ with DVC and trains the first model, so it takes a few minutes. The API starts w
 | MLflow | http://localhost:5500 | experiments, model registry (`crab-age@champion`) |
 | Monitoring dashboard | http://localhost:8501 | Streamlit + Evidently data drift report |
 
-Postgres is only reachable from the containers, not from the host.
+The ports are bound to `127.0.0.1`, so the services are reachable only from this machine,
+not from other machines on the network. Postgres is only reachable from the containers.
 
 **Login (local development only):** user `crab`, password `crab-dev-password`.
 These are local defaults in `docker-compose.yaml`. For any real use, override
