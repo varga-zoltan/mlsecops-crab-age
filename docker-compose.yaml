@@ -123,17 +123,8 @@ services:
   dashboard:
     build:
       <<: *app-build
-      target: runtime
-    image: crab-age-api:local
-    command:
-      - streamlit
-      - run
-      - dashboard/app.py
-      - --server.address=0.0.0.0
-      - --server.port=8501
-      - --server.headless=true
-      - --browser.gatherUsageStats=false
-      - --client.toolbarMode=viewer
+      target: dashboard
+    image: crab-age-dashboard:local
     environment:
       CRAB_MONITORING_DB_URL: postgresql+psycopg://${POSTGRES_USER:-crab}:${POSTGRES_PASSWORD:-crab-dev-postgres-password}@postgres:5432/monitoring
       CRAB_DRIFT_MIN_ROWS: ${CRAB_DRIFT_MIN_ROWS:-30}
@@ -142,12 +133,6 @@ services:
       - crab-data:/app/data/processed:ro
     ports:
       - "127.0.0.1:8501:8501"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=4)"]
-      interval: 10s
-      timeout: 5s
-      start_period: 20s
-      retries: 6
     depends_on:
       postgres:
         condition: service_healthy

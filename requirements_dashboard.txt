@@ -1,0 +1,12 @@
+# Dashboard image dependencies (exact versions). Installed with "-c requirements.txt",
+# so shared packages (numpy, pandas, scikit-learn, ...) get the same versions as in the API.
+# The dashboard does not import mlflow or FastAPI, so they are not installed here.
+evidently==0.7.23
+numpy==2.2.6
+pandas==2.3.3
+psycopg[binary]==3.3.9
+pydantic==2.14.3
+pydantic-settings==2.15.0
+pyyaml==6.0.3
+sqlalchemy==2.1.8
+streamlit==1.67.0
