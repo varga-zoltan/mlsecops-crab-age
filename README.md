@@ -94,6 +94,10 @@ Evidently and Streamlit usage telemetry is switched off (`DO_NOT_TRACK=1`, `--br
 
 ## Technical decisions
 
+- The model is saved in MLflow's sklearn format with `skops`, not `pickle`. Loading a pickle file
+  runs any code that is in it, so a tampered model file would be code execution on the API server.
+  skops only loads an allow-list of types; the two tree types the models need are listed in
+  `SKOPS_TRUSTED_TYPES` (`src/crab_age/model/train.py`). The model is also saved with a signature.
 - MLflow stores artifacts on a Docker volume, not in MinIO: the official MinIO image is no longer
   published and the third-party rebuild is not maintained, which is a supply chain risk.
 
