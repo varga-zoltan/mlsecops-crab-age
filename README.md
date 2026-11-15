@@ -92,8 +92,84 @@ With the project venv active, the same works from the host: `python scripts/simu
 
 Evidently and Streamlit usage telemetry is switched off (`DO_NOT_TRACK=1`, `--browser.gatherUsageStats=false`).
 
+## Screenshots
+
+Taken on a fresh clone after `docker compose down -v` and `docker compose up`.
+
+### Docker and smoke test
+
+All services healthy, host ports bound to `127.0.0.1`:
+
+![docker compose ps](docs/screenshots/01_docker_compose_ps.png)
+
+`python3 scripts/smoke_test.py` against the running stack:
+
+![smoke test](docs/screenshots/02_smoke_test.png)
+
+### REST API (Swagger UI)
+
+`POST /train`: search, training and acceptance gate; the new champion is loaded at once:
+
+![POST /train](docs/screenshots/03_swagger_train.png)
+
+`POST /predict` with a valid crab:
+
+![POST /predict](docs/screenshots/04_swagger_predict.png)
+
+Invalid input (`sex: "X"`) is rejected with 422:
+
+![422 response](docs/screenshots/05_swagger_422.png)
+
+Without a token the API answers 401:
+
+![401 response](docs/screenshots/06_swagger_401.png)
+
+### MLflow
+
+Training runs: one parent run per training with a nested run per model type, test metrics and
+the gate decision. Versions 3 and 4 come from a challenger limited to Ridge (worse MAE), so the
+gate rejected them:
+
+![MLflow training runs](docs/screenshots/07_mlflow_experiment_runs.png)
+
+Model registry: the `champion` alias and the `gate` tag of every version:
+
+![MLflow model registry](docs/screenshots/08_mlflow_registry_champion.png)
+
+Logged predictions exported to the `crab-age-inference` experiment as CSV artifacts:
+
+![MLflow inference batches](docs/screenshots/09_mlflow_inference_batches.png)
+
+### Monitoring dashboard (Streamlit + Evidently)
+
+After 500 requests with real held-out crabs (`--mode normal`): no dataset drift:
+
+![dashboard without drift](docs/screenshots/10_dashboard_no_drift.png)
+
+After 500 drifted requests (`--mode drift`): dataset drift detected:
+
+![dashboard with drift](docs/screenshots/11_dashboard_drift.png)
+
+Drift per column:
+
+![drift per column](docs/screenshots/12_dashboard_drift_columns.png)
+
+### GitHub
+
+CI on `main`: lint, tests with coverage and the four Docker image builds:
+
+![GitHub Actions](docs/screenshots/13_github_actions.png)
+
+Merged pull requests (feature branches, merge commits):
+
+![pull requests](docs/screenshots/14_github_pull_requests.png)
+
 ## Technical decisions
 
+- The model is saved in MLflow's sklearn format with `skops`, not `pickle`. Loading a pickle file
+  runs any code that is in it, so a tampered model file would be code execution on the API server.
+  skops only loads an allow-list of types; the two tree types the models need are listed in
+  `SKOPS_TRUSTED_TYPES` (`src/crab_age/model/train.py`). The model is also saved with a signature.
 - MLflow stores artifacts on a Docker volume, not in MinIO: the official MinIO image is no longer
   published and the third-party rebuild is not maintained, which is a supply chain risk.
 
