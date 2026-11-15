@@ -9,6 +9,8 @@
 # URLs from the host:  API http://localhost:8000/docs   MLflow http://localhost:5500
 #                      Dashboard http://localhost:8501
 # Containers reach each other by service name (postgres:5432, mlflow:5000), never 127.0.0.1.
+# Host ports are bound to 127.0.0.1 only: with the public dev passwords the services must not
+# be reachable from other machines on the network.
 #
 # Every variable has a working LOCAL DEVELOPMENT default, so no .env or secrets file
 # is needed. Override them via environment variables or a .env file for any real use.
@@ -69,7 +71,7 @@ services:
     volumes:
       - mlflow-artifacts:/mlartifacts
     ports:
-      - "5500:5000"
+      - "127.0.0.1:5500:5000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,7 +110,7 @@ services:
       - crab-data:/app/data/processed
       - ./.git:/app/.git:ro
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,7 +141,7 @@ services:
     volumes:
       - crab-data:/app/data/processed:ro
     ports:
-      - "8501:8501"
+      - "127.0.0.1:8501:8501"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=4)"]
       interval: 10s
