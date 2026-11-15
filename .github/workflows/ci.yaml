@@ -78,6 +78,9 @@ jobs:
           - image: init
             dockerfile: Dockerfile
             target: init
+          - image: dashboard
+            dockerfile: Dockerfile
+            target: dashboard
           - image: mlflow
             dockerfile: docker/mlflow.Dockerfile
             target: ""

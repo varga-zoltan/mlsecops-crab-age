@@ -1,5 +1,6 @@
 # Development and test tools (exact versions)
 -r requirements.txt
+-r requirements_dashboard.txt
 
 coverage==7.17.3
 dvc==3.67.1
