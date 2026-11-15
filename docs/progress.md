@@ -20,15 +20,15 @@
 | API user | One user from env: `CRAB_API_USERNAME` + Argon2 hash in `CRAB_API_PASSWORD_HASH`; `CRAB_JWT_SECRET_KEY` >= 64 bytes (HS512) | No password in code |
 | MLflow artifacts | Docker volume served by the MLflow server (`--serve-artifacts`), no MinIO | Official MinIO image is no longer published; the third-party rebuild is unmaintained (supply chain risk) |
 | Host ports | API 8000, MLflow 5500, Streamlit 8501; Postgres not published | Port 5000 is used by AirPlay on macOS; smaller attack surface |
-| Images | One `Dockerfile`, targets `runtime` (API, no DVC) and `init` (+ DVC); MLflow server: `ghcr.io/mlflow/mlflow:v3.18.0` + psycopg, non-root | Smaller API image; CI builds both targets |
+| Images | One `Dockerfile`, targets `runtime` (API: mlflow, no DVC, no Streamlit), `init` (+ DVC) and `dashboard` (Streamlit + Evidently, no mlflow/FastAPI); MLflow server: `ghcr.io/mlflow/mlflow:v3.18.0` + psycopg, non-root | Each image only has what it imports: API 1.98 GB -> 1.33 GB, init 2.09 GB -> 1.46 GB; CI builds all four |
 | Drift report | Evidently 0.7.23 `DataDriftPreset` (new API); reference = `train.csv`, current = latest N logged requests (default 500, min 30) | Recent drift is not hidden by old traffic; too few rows give noisy tests |
 | Dataset drift rule | Drift if >= 50% of feature columns drift (Evidently default) | Single columns drift by chance even on real held-out data |
 | Traffic simulator | `crab_age.monitoring.simulate_traffic`: `normal` samples real test rows, `drift` scales them; runs inside the api container | Reproducible demo without local Python |
 | Telemetry | `DO_NOT_TRACK=1` (Evidently), `--browser.gatherUsageStats=false` (Streamlit) | No usage data leaves the stack |
 | Lineage in Docker | compose mounts `.git` read-only into `init` and `api`; `crab_age.lineage` reads HEAD (loose ref, `packed-refs`, detached HEAD) without the git program | `git_sha` works with a plain `docker compose up`; uncommitted changes (`-dirty`) cannot be detected without git |
+| `mlflow-skinny` | Not used; the API image keeps the full `mlflow` | At most ~230 MB (~17%) more saving, and the tests (full mlflow with a local SQLite store) would no longer match the runtime image |
 | Settings source | Environment variables only (no `.env` reading in Python); unknown `CRAB_*` variables are an error | Compose's `.env` may hold non-CRAB variables; typos must not fall back silently |
 
 ## Open items to remember
 
-- **Image size:** the app image is ~1.5 GB (full `mlflow` package); `mlflow-skinny` could shrink it.
 - **Tests:** Starlette warns that `httpx` with its TestClient is deprecated (`httpx2` recommended); revisit when FastAPI follows.
