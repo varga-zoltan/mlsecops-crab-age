@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     # Request hardening and lineage.
     max_body_bytes: int = Field(default=4096, ge=256, le=1_048_576)
-    git_sha: str = "unknown"
+    git_sha: str = "unknown"  # CRAB_GIT_SHA build argument; read by crab_age.lineage as a fallback
 
     @model_validator(mode="before")
     @classmethod

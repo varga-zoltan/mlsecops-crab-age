@@ -25,11 +25,10 @@
 | Dataset drift rule | Drift if >= 50% of feature columns drift (Evidently default) | Single columns drift by chance even on real held-out data |
 | Traffic simulator | `crab_age.monitoring.simulate_traffic`: `normal` samples real test rows, `drift` scales them; runs inside the api container | Reproducible demo without local Python |
 | Telemetry | `DO_NOT_TRACK=1` (Evidently), `--browser.gatherUsageStats=false` (Streamlit) | No usage data leaves the stack |
+| Lineage in Docker | compose mounts `.git` read-only into `init` and `api`; `crab_age.lineage` reads HEAD (loose ref, `packed-refs`, detached HEAD) without the git program | `git_sha` works with a plain `docker compose up`; uncommitted changes (`-dirty`) cannot be detected without git |
 | Settings source | Environment variables only (no `.env` reading in Python); unknown `CRAB_*` variables are an error | Compose's `.env` may hold non-CRAB variables; typos must not fall back silently |
 
 ## Open items to remember
 
-- **Lineage in Docker:** without `.git` in the image the `git_sha` tag is `unknown` unless the image is
-  built with `GIT_SHA=$(git rev-parse HEAD) docker compose up --build`.
 - **Image size:** the app image is ~1.5 GB (full `mlflow` package); `mlflow-skinny` could shrink it.
 - **Tests:** Starlette warns that `httpx` with its TestClient is deprecated (`httpx2` recommended); revisit when FastAPI follows.

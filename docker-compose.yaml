@@ -84,6 +84,8 @@ services:
       <<: *mlflow-client
     volumes:
       - crab-data:/app/data/processed
+      # Lineage: the git_sha tag is read from the repository's .git folder (read-only).
+      - ./.git:/app/.git:ro
     depends_on:
       mlflow:
         condition: service_healthy
@@ -104,6 +106,7 @@ services:
       CRAB_INFERENCE_BATCH_SIZE: ${CRAB_INFERENCE_BATCH_SIZE:-10}
     volumes:
       - crab-data:/app/data/processed
+      - ./.git:/app/.git:ro
     ports:
       - "8000:8000"
     depends_on:

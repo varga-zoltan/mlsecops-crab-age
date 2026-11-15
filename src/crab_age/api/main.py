@@ -28,6 +28,7 @@ from crab_age.api.schemas import (
     VersionResponse,
 )
 from crab_age.config import Settings, get_settings
+from crab_age.lineage import git_sha
 from crab_age.logging_setup import get_request_id, new_request_id, reset_request_id, set_request_id, setup_logging
 from crab_age.model.train import TrainResult, read_train_params, run
 from crab_age.monitoring.inference_export import InferenceExporter
@@ -81,6 +82,7 @@ def create_app(
     exporter = InferenceExporter(store, settings.inference_experiment, settings.inference_batch_size)
     runner = train_runner or _default_train_runner(settings)
     train_lock = threading.Lock()
+    commit = git_sha()  # read once: the code does not change while the API runs
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
@@ -147,7 +149,7 @@ def create_app(
         return VersionResponse(
             name=API_NAME,
             version=package_version("crab-age"),
-            git_sha=settings.git_sha,
+            git_sha=commit,
             model_name=settings.registered_model_name,
             model_version=current.version if current else None,
         )
