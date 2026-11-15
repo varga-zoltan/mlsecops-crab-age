@@ -7,13 +7,15 @@
 
 FROM python:3.12.16-slim AS runtime
 
-# DO_NOT_TRACK switches off Evidently's usage telemetry.
+# DO_NOT_TRACK switches off Evidently's usage telemetry. There is no git program in the image
+# (the commit id is read from the mounted .git folder), so MLflow's GitPython warning is silenced.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     MLFLOW_DISABLE_AGENT_HINT=1 \
-    DO_NOT_TRACK=1
+    DO_NOT_TRACK=1 \
+    GIT_PYTHON_REFRESH=quiet
 
 WORKDIR /app
 
