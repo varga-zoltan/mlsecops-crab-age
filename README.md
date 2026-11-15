@@ -30,6 +30,16 @@ These are local defaults in `docker-compose.yaml`. For any real use, override
 `CRAB_API_PASSWORD_HASH`, `CRAB_JWT_SECRET_KEY` and `POSTGRES_PASSWORD` with environment
 variables or a `.env` file (see `.env.example`).
 
+Check the running stack with the smoke test (plain Python 3.12+, nothing to install):
+
+```bash
+python3 scripts/smoke_test.py
+```
+
+It calls `/health`, `/version`, `/token`, `/train` and `/predict` (including the 401 and 422 cases)
+and the MLflow and dashboard health endpoints, prints one `PASS`/`FAIL` line per check and exits
+with 1 if any check fails.
+
 Stop: `docker compose down`. Reset everything (data, models, logs): `docker compose down -v`.
 
 ## Dataset
