@@ -9,6 +9,7 @@
 
 FROM python:3.12.16-slim AS base
 
+# Slow networks: pip waits 60 s per read and retries 10 times (defaults: 15 s, 5).
 # DO_NOT_TRACK switches off Evidently's usage telemetry. There is no git program in the images
 # (the commit id is read from the mounted .git folder), so MLflow's GitPython warning is silenced.
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -17,10 +18,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     MLFLOW_DISABLE_AGENT_HINT=1 \
     DO_NOT_TRACK=1 \
-    GIT_PYTHON_REFRESH=quiet
+    GIT_PYTHON_REFRESH=quiet \
+    PIP_DEFAULT_TIMEOUT=60 \
+    PIP_RETRIES=10
 
 WORKDIR /app
-RUN useradd --create-home --uid 10001 app
+# The build backend (same version as in pyproject.toml) is installed once here, so installing
+# the project later (--no-build-isolation) does not download it again on every code change.
+RUN useradd --create-home --uid 10001 app \
+ && pip install setuptools==80.9.0
 
 # Lineage fallback: if no .git folder is mounted, the commit comes from this build argument.
 ARG GIT_SHA=unknown
@@ -36,7 +42,7 @@ RUN pip install -r requirements.txt
 # Then the code (changes often) and the files the jobs read at runtime.
 COPY pyproject.toml params.yaml dvc.yaml dvc.lock ./
 COPY src/ ./src/
-RUN pip install --no-deps . \
+RUN pip install --no-deps --no-build-isolation . \
  && rm -rf build \
  && mkdir -p /app/data/processed \
  && chown -R app:app /app
@@ -77,7 +83,7 @@ RUN sed 's/\[[^]]*\]//' requirements.txt > /tmp/constraints.txt \
 COPY pyproject.toml ./
 COPY src/ ./src/
 COPY dashboard/ ./dashboard/
-RUN pip install --no-deps . \
+RUN pip install --no-deps --no-build-isolation . \
  && rm -rf build \
  && mkdir -p /app/data/processed \
  && chown -R app:app /app

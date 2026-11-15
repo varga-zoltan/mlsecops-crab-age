@@ -15,6 +15,9 @@
 # Every variable has a working LOCAL DEVELOPMENT default, so no .env or secrets file
 # is needed. Override them via environment variables or a .env file for any real use.
 #
+# The app images are built locally when missing (pull_policy: never), never pulled from a registry.
+# After changing the code, rebuild them with: docker compose up --build
+#
 # Stop: docker compose down        Reset everything (volumes too): docker compose down -v
 
 name: crab-age
@@ -55,6 +58,7 @@ services:
       context: .
       dockerfile: docker/mlflow.Dockerfile
     image: crab-age-mlflow:local
+    pull_policy: never
     environment:
       <<: *db
     command:
@@ -82,6 +86,7 @@ services:
       <<: *app-build
       target: init
     image: crab-age-init:local
+    pull_policy: never
     environment:
       <<: *mlflow-client
     volumes:
@@ -98,6 +103,7 @@ services:
       <<: *app-build
       target: runtime
     image: crab-age-api:local
+    pull_policy: never
     environment:
       <<: *mlflow-client
       CRAB_API_USERNAME: ${CRAB_API_USERNAME:-crab}
@@ -125,6 +131,7 @@ services:
       <<: *app-build
       target: dashboard
     image: crab-age-dashboard:local
+    pull_policy: never
     environment:
       CRAB_MONITORING_DB_URL: postgresql+psycopg://${POSTGRES_USER:-crab}:${POSTGRES_PASSWORD:-crab-dev-postgres-password}@postgres:5432/monitoring
       CRAB_DRIFT_MIN_ROWS: ${CRAB_DRIFT_MIN_ROWS:-30}
